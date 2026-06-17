@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ShoppingCart, Star, Heart, Filter, Search, Package, ShieldCheck, Sparkles, Check, ChevronRight, ShoppingBag, X } from 'lucide-react'
+import { ShoppingCart, Star, Heart, Filter, Search, Package, ShieldCheck, Sparkles, Check, ChevronRight, ShoppingBag, X, FileText, Printer, CheckCircle } from 'lucide-react'
 
 interface Product {
   id: number
@@ -17,10 +17,19 @@ interface Product {
 
 export default function ShopPage() {
   const [selectedCategory, setSelectedCategory] = useState('All')
-  const [cart, setCart] = useState<number[]>([])
-  const [favorites, setFavorites] = useState<number[]>([])
+  const [cart, setCart] = useState<number[]>([1, 2]) // Pre-populate for production demo feel
+  const [favorites, setFavorites] = useState<number[]>([1, 3])
   const [searchQuery, setSearchQuery] = useState('')
   const [isCartOpen, setIsCartOpen] = useState(false)
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false)
+  const [checkoutStep, setCheckoutStep] = useState<'details' | 'success'>('details')
+  const [orderId, setOrderId] = useState('')
+  
+  // Checkout Form State
+  const [email, setEmail] = useState('')
+  const [address, setAddress] = useState('')
+  const [cardName, setCardName] = useState('')
+  const [cardNumber, setCardNumber] = useState('')
 
   const products: Product[] = [
     { id: 1, title: 'Mountain Sunrise Fine Art Canvas', price: 45, originalPrice: 60, rating: 4.9, reviews: 124, category: 'Fine Art', image: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=600&auto=format&fit=crop&q=80', badge: 'Best Seller' },
@@ -41,11 +50,27 @@ export default function ShopPage() {
     setFavorites(prev => prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id])
   }
 
+  const handleCheckoutSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    setOrderId('ORD-' + Math.floor(100000 + Math.random() * 900000))
+    setCheckoutStep('success')
+  }
+
+  const handleCloseCheckout = () => {
+    setIsCheckoutOpen(false)
+    setCheckoutStep('details')
+    setCart([]) // Clear cart on successful order
+  }
+
   const filteredProducts = products.filter(p => {
     const matchesCategory = selectedCategory === 'All' || p.category === selectedCategory
     const matchesSearch = p.title.toLowerCase().includes(searchQuery.toLowerCase()) || p.category.toLowerCase().includes(searchQuery.toLowerCase())
     return matchesCategory && matchesSearch
   })
+
+  const cartSubtotal = products.filter(p => cart.includes(p.id)).reduce((acc, curr) => acc + curr.price, 0)
+  const cartTax = Math.round(cartSubtotal * 0.1)
+  const cartTotal = cartSubtotal + cartTax
 
   return (
     <div className="min-h-screen bg-[#F2F2F7] dark:bg-[#000000] text-gray-900 dark:text-gray-100 transition-colors duration-300">
@@ -58,7 +83,7 @@ export default function ShopPage() {
             </div>
             <div>
               <h1 className="text-2xl font-black tracking-tight text-[#000000] dark:text-[#FFFFFF]">ShopFrame</h1>
-              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Premium Storefront</p>
+              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">Premium Storefront</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -78,7 +103,7 @@ export default function ShopPage() {
             >
               <ShoppingCart className="text-[#5856D6]" size={20} />
               {cart.length > 0 && (
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#FF3B30] text-white text-xs font-bold rounded-full flex items-center justify-center animate-bounce">
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#FF3B30] text-white text-xs font-bold rounded-full flex items-center justify-center">
                   {cart.length}
                 </span>
               )}
@@ -95,15 +120,12 @@ export default function ShopPage() {
               <Sparkles size={14} /> Summer Exclusive Sale
             </div>
             <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">Fine Art Prints & Asset Bundles</h2>
-            <p className="text-white/90 text-sm sm:text-base leading-relaxed">
+            <p className="text-white/95 max-w-xl text-sm leading-relaxed mt-2">
               Curated museum-grade prints, Lightroom presets, and high-fidelity canvases sourced from award-winning global photographers.
             </p>
-            <button className="bg-white text-[#5856D6] font-bold px-6 py-3 rounded-xl hover:bg-gray-50 active:scale-95 transition-all shadow-lg shadow-purple-950/20">
-              Explore Store
-            </button>
           </div>
           <div className="absolute right-0 bottom-0 top-0 opacity-15 flex items-center pr-10 pointer-events-none">
-            <ShoppingBag size={240} />
+            <ShoppingBag size={220} />
           </div>
         </section>
 
@@ -139,12 +161,11 @@ export default function ShopPage() {
                 key={product.id} 
                 className="bg-white dark:bg-[#1C1C1E] rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-800/80 group flex flex-col justify-between"
               >
-                {/* Image Container */}
                 <div className="relative h-48 sm:h-56 w-full overflow-hidden bg-gray-100 dark:bg-gray-800">
                   <img 
                     src={product.image} 
                     alt={product.title} 
-                    className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
+                    className="object-cover w-full h-full group-hover:scale-102 transition-transform duration-500"
                   />
                   {product.badge && (
                     <span className="absolute top-4 left-4 bg-black/80 backdrop-blur-md text-white text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg">
@@ -153,7 +174,7 @@ export default function ShopPage() {
                   )}
                   <button 
                     onClick={() => handleToggleFavorite(product.id)}
-                    className="absolute top-4 right-4 p-2 bg-white/90 dark:bg-black/60 backdrop-blur-md rounded-full shadow-md hover:scale-110 active:scale-95 transition-all"
+                    className="absolute top-4 right-4 p-2 bg-white/95 dark:bg-black/60 backdrop-blur-md rounded-full shadow-md hover:scale-110 active:scale-95 transition-all"
                   >
                     <Heart 
                       size={18} 
@@ -164,13 +185,12 @@ export default function ShopPage() {
                   </button>
                 </div>
 
-                {/* Details */}
                 <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
                   <div>
                     <span className="text-[10px] font-bold text-[#5856D6] uppercase tracking-wider block mb-1">
                       {product.category}
                     </span>
-                    <h4 className="font-extrabold text-[#000000] dark:text-[#FFFFFF] text-base leading-tight group-hover:text-[#5856D6] transition-colors duration-350">
+                    <h4 className="font-extrabold text-[#000000] dark:text-[#FFFFFF] text-base leading-tight group-hover:text-[#5856D6] transition-colors duration-300">
                       {product.title}
                     </h4>
                     <div className="flex items-center gap-1 mt-2">
@@ -273,12 +293,196 @@ export default function ShopPage() {
               <div className="p-6 border-t border-gray-150 dark:border-gray-850 bg-gray-50 dark:bg-gray-900 space-y-4">
                 <div className="flex justify-between items-center">
                   <span className="font-semibold text-gray-500">Subtotal</span>
-                  <span className="text-2xl font-black">
-                    ${products.filter(p => cart.includes(p.id)).reduce((acc, curr) => acc + curr.price, 0)}
-                  </span>
+                  <span className="text-2xl font-black">${cartSubtotal}</span>
                 </div>
-                <button className="w-full bg-[#5856D6] hover:bg-[#4744C6] text-white font-bold py-4 rounded-xl shadow-lg shadow-purple-500/20 active:scale-95 transition-all">
+                <button 
+                  onClick={() => {
+                    setIsCartOpen(false)
+                    setIsCheckoutOpen(true)
+                  }}
+                  className="w-full bg-[#5856D6] hover:bg-[#4744C6] text-white font-bold py-4 rounded-xl shadow-lg shadow-purple-500/20 active:scale-95 transition-all"
+                >
                   Proceed to Checkout
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Production-Grade Checkout & Invoice Modal */}
+      {isCheckoutOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
+          <div className="bg-white dark:bg-[#1C1C1E] border border-gray-100 dark:border-gray-800 rounded-3xl w-full max-w-2xl shadow-2xl relative overflow-hidden my-8">
+            
+            {checkoutStep === 'details' ? (
+              <form onSubmit={handleCheckoutSubmit} className="flex flex-col md:flex-row h-full">
+                {/* Left Side Form */}
+                <div className="flex-1 p-6 space-y-4">
+                  <div className="flex justify-between items-center pb-3 border-b border-gray-100 dark:border-gray-800">
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">Secure Checkout</h3>
+                    <button 
+                      type="button" 
+                      onClick={() => setIsCheckoutOpen(false)}
+                      className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Email Address</label>
+                      <input 
+                        type="email" 
+                        value={email}
+                        onChange={e => setEmail(e.target.value)}
+                        placeholder="you@example.com"
+                        className="w-full p-3 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-1 focus:ring-[#5856D6]"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Shipping Address</label>
+                      <input 
+                        type="text" 
+                        value={address}
+                        onChange={e => setAddress(e.target.value)}
+                        placeholder="123 Main St, San Francisco, CA"
+                        className="w-full p-3 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-1 focus:ring-[#5856D6]"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Cardholder Name</label>
+                      <input 
+                        type="text" 
+                        value={cardName}
+                        onChange={e => setCardName(e.target.value)}
+                        placeholder="John Doe"
+                        className="w-full p-3 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-1 focus:ring-[#5856D6]"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Card Number</label>
+                      <input 
+                        type="text" 
+                        value={cardNumber}
+                        onChange={e => setCardNumber(e.target.value.replace(/\D/g, '').substring(0, 16))}
+                        placeholder="4111 2222 3333 4444"
+                        className="w-full p-3 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm focus:outline-none focus:ring-1 focus:ring-[#5856D6]"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <button 
+                    type="submit" 
+                    className="w-full bg-[#5856D6] hover:bg-[#4744C6] text-white font-bold py-4 rounded-xl transition-all shadow-md active:scale-95 mt-4"
+                  >
+                    Complete Payment (${cartTotal})
+                  </button>
+                </div>
+
+                {/* Right Side Cart Summary */}
+                <div className="w-full md:w-64 bg-gray-50 dark:bg-gray-900 p-6 border-t md:border-t-0 md:border-l border-gray-150 dark:border-gray-800 flex flex-col justify-between">
+                  <div className="space-y-4">
+                    <h4 className="font-bold text-xs uppercase text-gray-400 tracking-wider">Order Summary</h4>
+                    <div className="space-y-3 max-h-48 overflow-y-auto pr-1">
+                      {products.filter(p => cart.includes(p.id)).map(item => (
+                        <div key={item.id} className="flex justify-between text-xs">
+                          <span className="text-gray-600 dark:text-gray-300 truncate max-w-[150px]">{item.title}</span>
+                          <span className="font-bold">${item.price}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 pt-4 border-t border-gray-200 dark:border-gray-800 mt-4">
+                    <div className="flex justify-between text-xs text-gray-500">
+                      <span>Subtotal</span>
+                      <span>${cartSubtotal}</span>
+                    </div>
+                    <div className="flex justify-between text-xs text-gray-500">
+                      <span>VAT (10%)</span>
+                      <span>${cartTax}</span>
+                    </div>
+                    <div className="flex justify-between text-sm font-bold text-gray-800 dark:text-white pt-1">
+                      <span>Total</span>
+                      <span>${cartTotal}</span>
+                    </div>
+                  </div>
+                </div>
+              </form>
+            ) : (
+              /* High-End Production Invoice Receipt */
+              <div className="p-6 space-y-6">
+                <div className="flex justify-between items-center pb-4 border-b border-gray-100 dark:border-gray-850">
+                  <div className="flex items-center gap-2 text-green-500">
+                    <CheckCircle size={24} />
+                    <span className="font-black text-lg">Order Confirmed</span>
+                  </div>
+                  <button 
+                    onClick={window.print}
+                    className="flex items-center gap-1 text-xs font-bold text-[#5856D6] border border-[#5856D6]/30 px-3 py-1.5 rounded-xl hover:bg-[#5856D6]/10"
+                  >
+                    <Printer size={14} /> Print Invoice
+                  </button>
+                </div>
+
+                <div className="bg-gray-50 dark:bg-gray-850 p-6 rounded-2xl border border-gray-100 dark:border-transparent space-y-4 text-xs font-mono">
+                  <div className="flex justify-between">
+                    <div>
+                      <span className="text-gray-400 block">ORDER ID</span>
+                      <span className="font-black text-sm text-gray-800 dark:text-white">{orderId}</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-gray-400 block">DATE</span>
+                      <span className="font-black text-sm text-gray-800 dark:text-white">{new Date().toLocaleDateString()}</span>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-gray-200 dark:border-gray-800 pt-4 space-y-2">
+                    <span className="text-gray-400 block">CUSTOMER DETAILS</span>
+                    <span className="block text-gray-700 dark:text-gray-300">Email: {email}</span>
+                    <span className="block text-gray-700 dark:text-gray-300">Address: {address}</span>
+                  </div>
+
+                  <div className="border-t border-gray-200 dark:border-gray-800 pt-4 space-y-2">
+                    <span className="text-gray-400 block">ITEMS SUMMARY</span>
+                    {products.filter(p => cart.includes(p.id)).map(item => (
+                      <div key={item.id} className="flex justify-between text-gray-700 dark:text-gray-300">
+                        <span>1x {item.title}</span>
+                        <span>${item.price}.00</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="border-t border-gray-200 dark:border-gray-800 pt-4 space-y-1">
+                    <div className="flex justify-between text-gray-500">
+                      <span>Subtotal</span>
+                      <span>${cartSubtotal}.00</span>
+                    </div>
+                    <div className="flex justify-between text-gray-500">
+                      <span>Tax (10%)</span>
+                      <span>${cartTax}.00</span>
+                    </div>
+                    <div className="flex justify-between text-sm font-black text-gray-800 dark:text-white pt-1">
+                      <span>Total Paid</span>
+                      <span>${cartTotal}.00</span>
+                    </div>
+                  </div>
+                </div>
+
+                <button 
+                  onClick={handleCloseCheckout}
+                  className="w-full bg-[#5856D6] hover:bg-[#4744C6] text-white font-bold py-4 rounded-xl transition-all shadow-md active:scale-95"
+                >
+                  Return to Storefront
                 </button>
               </div>
             )}
